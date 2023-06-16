@@ -2,12 +2,78 @@
 import sys
 from abc import ABCMeta
 from argparse import ArgumentParser, Namespace, _ArgumentGroup
-from typing import Dict, List, Optional, Type, Union, get_type_hints
+from typing import (
+    Dict,
+    List,
+    Optional,
+    Type,
+    Union,
+    get_type_hints,
+    TypeVar,
+    Generic,
+    Any,
+    Callable,
+    get_args,
+    get_origin,
+    Literal,
+    Tuple
+)
+from inspect import stack as inspect_stack
 
 from typing_extensions import Self
 
 GeneralParser = Union[ArgumentParser, _ArgumentGroup]
 
+T = TypeVar("T")
+
+class argument(Generic[T]):
+
+    def __init__(self, *flags: str, type: Type[T] = str, default: Optional[T] = None, required: bool = False):
+        code_context = inspect_stack(1)[1].code_context
+        # support format:
+        # * <arg> = argument(...)
+        # * self.<arg> = argument(...)
+        assert(code_context is not None and len(code_context) > 0), "failed to get code context"
+        self.__name = code_context[0].strip().split(sep=" ")[0]
+        if self.__name.startswith("self."):
+            self.__name = self.__name.removeprefix("self.")
+        self.__flags = flags
+        self.__required = required
+        self.__default = default
+        self.__type = type
+
+    def __get__(self, instance: Any, type_: type | None = None) -> T:
+        assert hasattr(self, "__value"), "value is not set"
+        return self.__value
+
+    def __set__(self, instance: Any, value: T) -> None:
+        self.__value = value
+
+    def __call__(self, arg_def: Callable[[Any], T]) -> "argument[T]":
+        return self
+    
+    def __get_real_T(self) -> Optional[TypeVar]:
+        if hasattr(self, "__orig_class__"):
+            return self.__orig_class__.__args__[0]  # type: ignore
+        else:
+            return None
+
+    def __get_choices(self) -> Optional[Tuple[T]]:
+        real_T = self.__get_real_T()
+        if real_T is None:
+            return None
+        if (get_origin(real_T) is not Literal):
+            return None
+        return get_args(real_T)
+
+    def add_args(self, parser: GeneralParser):
+        parser.add_argument(
+            *self.__flags,
+            default=self.__default,
+            required=self.__required,
+            type=self.__type,
+            choices=self.__get_choices()
+        )
 
 class BaseArguments(Namespace, metaclass=ABCMeta):
     """参数集合基类.
