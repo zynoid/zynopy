@@ -16,7 +16,8 @@ from typing import (
     get_args,
     get_origin,
     Literal,
-    Tuple
+    Tuple,
+    Protocol
 )
 from inspect import stack as inspect_stack
 
@@ -28,7 +29,7 @@ T = TypeVar("T")
 
 class argument(Generic[T]):
 
-    def __init__(self, *flags: str, type: Type[T] = str, default: Optional[T] = None, required: bool = False):
+    def __init__(self, *flags: str, type: Type[T] = int, default: Optional[T] = None, required: bool = False):
         code_context = inspect_stack(1)[1].code_context
         # support format:
         # * <arg> = argument(...)
@@ -51,7 +52,7 @@ class argument(Generic[T]):
 
     def __call__(self, arg_def: Callable[[Any], T]) -> "argument[T]":
         return self
-    
+
     def __get_real_T(self) -> Optional[TypeVar]:
         if hasattr(self, "__orig_class__"):
             return self.__orig_class__.__args__[0]  # type: ignore
@@ -233,8 +234,8 @@ class BaseArguments(Namespace, metaclass=ABCMeta):
                 or (parse_list is not None and len(parse_list) == 1
                     and parse_list[0] in {"--help", "-h"})):
             self._show_help()  # 程序会在这里打印help并结束
-        parser = ArgumentParser(prog=self._arg_name,
-                                description=self._arg_description)
+        parser = ArgumentParser(prog=self._name,
+                                description=self._description)
         # 加入并解析当前层参数
         self._add_args(parser)
         _, left_params = parser.parse_known_args(parse_list, namespace=self)
