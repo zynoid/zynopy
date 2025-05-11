@@ -153,8 +153,8 @@ def dump_json(obj: Any,
                   indent=indent,
                   ensure_ascii=False,
                   default=pydantic_encoder)
-      
-        
+
+
 def dump_json_string(obj: Any, indent: Optional[int] = None, exclude_none: bool = False) -> str:
     """将对象写入json文件.
 

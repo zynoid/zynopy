@@ -35,9 +35,9 @@ class argument(Generic[T]):
 
 if __name__ == "__main__":
     class Test:
-        
+
         b = argument[Literal["abc", "bcd"]]("--b")
-        
+
         def __init__(self) -> None:
             self.a = argument[Literal[1, 2]]("--a", type=int)
 
