@@ -2,19 +2,16 @@
 
 提供支持类别推导、校验，支持json和json列表（每行为一个json字符串）形式的读写工具
 
-Todo:
-    - [ ] (Jiang Yuzhen) 修改模块名为json_utils或更合适的其他名称
 """
 import json
 from pathlib import Path
 from typing import (Any, Generator, List, Optional, Type, TypeVar, Union,
                     overload)
 
-from pydantic import parse_obj_as, parse_raw_as
+from pydantic import TypeAdapter
 from pydantic.json import pydantic_encoder
 
-LoadType = TypeVar("LoadType", bound=Type)
-
+LoadType = TypeVar("LoadType")
 
 @overload
 def load_json(file: Union[str, Path]) -> Any:
@@ -193,7 +190,7 @@ def load_json(file: Union[str, Path],
     if type_ is None:
         return obj
     else:
-        return parse_obj_as(type_, obj)
+        return TypeAdapter(type_).validate_python(obj)
 
 
 def load_json_string(s: str, type_: Optional[Type[LoadType]] = None) -> Union[Any, LoadType]:
@@ -201,7 +198,7 @@ def load_json_string(s: str, type_: Optional[Type[LoadType]] = None) -> Union[An
     if type_ is None:
         return json.loads(s)
     else:
-        return parse_raw_as(type_, s)
+        return TypeAdapter(type_).validate_strings(s)
 
 
 def load_json_list(
@@ -214,7 +211,7 @@ def load_json_list(
             if type_ is None:
                 yield json.loads(line)
             else:
-                yield parse_obj_as(type_, json.loads(line))
+                yield TypeAdapter(type_).validate_python(json.loads(line))
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
 /.vscode
-/test*
+/playground
 __pycache__
+*.egg-info/
